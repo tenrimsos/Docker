@@ -1,0 +1,35 @@
+#!/sbin/openrc-run
+
+name=$RC_SVCNAME
+cfgfile="/etc/ss-srv.json"
+command="/usr/bin/ss-server"
+command_args="-c $cfgfile"
+command_user="daemon"
+pidfile="/run/ss-server/$RC_SVCNAME.pid"
+start_stop_daemon_args="--args-for-start-stop-daemon"
+command_background="yes"
+
+depend() {
+	need net
+}
+
+start_pre() {
+	mkdir -p /run/ss-server /var/log/ss-server
+	checkpath --directory --owner $command_user:$command_user --mode 0775 \
+		/run/ss-server /var/log/ss-server
+}
+
+start() {
+	ebegin "Starting $RC_SVCNAME"
+	start-stop-daemon --start -b \
+		--make-pidfile \
+		--pidfile $pidfile \
+		--exec $command \
+		-- \
+		$command_args
+	eend $?
+}
+
+stop() {
+	kill -9 $(cat $pidfile 2>&-) 2>&- || true
+}
